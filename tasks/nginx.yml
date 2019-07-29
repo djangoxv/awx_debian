@@ -1,0 +1,53 @@
+---
+
+- name: Install PyOpenSSL if Creating Self-Signed Certificate
+  apt:
+    name: python-openssl
+  when: awx_debian_nginx_ssl
+
+- name: Provision nginx Certificate Path
+  file:
+    path:  "/etc/nginx/ssl"
+    state: directory
+    mode: 0750
+  when: awx_debian_nginx_ssl
+
+- name: Generate Private Key
+  openssl_privatekey:
+    path: "/etc/nginx/ssl/awx-key.pem"
+  when: awx_debian_nginx_ssl
+
+- name: Generate a Certificate Signing Request
+  openssl_csr:
+    path: "/etc/nginx/ssl/awx-debian.csr"
+    privatekey_path: "/etc/nginx/ssl/awx-key.pem"
+    common_name: "{{ awx_debian_fqdn }}"
+  when: awx_debian_nginx_ssl
+
+- name: Create a Self Signed Certificate for {{ awx_debian_fqdn }}
+  openssl_certificate:
+    path: "/etc/nginx/ssl/awx-debian.pem"
+    privatekey_path: "/etc/nginx/ssl/awx-key.pem"
+    csr_path: "/etc/nginx/ssl/awx-debian.csr"
+    provider: selfsigned
+  when: awx_debian_nginx_ssl
+
+- name: Provision AWX Nginx Virtual Host Configuration
+  template:
+    src:   "awx-nginx.conf.j2"
+    dest:  "/etc/nginx/sites-available/awx-nginx.conf"
+    mode:  0644
+
+- name: Enable AWX Site
+  file:
+    src:   "/etc/nginx/sites-available/awx-nginx.conf"
+    dest:  "/etc/nginx/sites-enabled/awx-nginx.conf"
+    state:  link
+  ignore_errors: ansible_check_mode
+
+- name: Reload nginx Configuration
+  systemd:
+    name: "nginx"
+    state: reloaded
+  changed_when: False
+  ignore_errors: ansible_check_mode

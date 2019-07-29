@@ -1,0 +1,14 @@
+# {{ ansible_managed }}
+
+[Unit]
+Description=AWX Django Callback Receiver
+Wants=network-online.target
+
+[Service]
+User={{ awx_debian_user }}
+Group={{ awx_debian_user }}
+ExecStart={{ awx_debian_home }}/venv/awx/bin/awx-manage run_callback_receiver
+WorkingDirectory={{ awx_debian_home }}
+
+[Install]
+WantedBy=multi-user.target

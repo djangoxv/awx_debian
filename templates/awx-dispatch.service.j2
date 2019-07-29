@@ -1,0 +1,14 @@
+# {{ ansible_managed }}
+
+[Unit]
+Description=AWX Django Channel Manager
+Wants=network-online.target
+
+[Service]
+User={{ awx_debian_user }}
+Group={{ awx_debian_user }}
+ExecStart={{ awx_debian_home }}/venv/awx/bin/awx-manage run_dispatcher
+WorkingDirectory={{ awx_debian_home }}
+
+[Install]
+WantedBy=multi-user.target

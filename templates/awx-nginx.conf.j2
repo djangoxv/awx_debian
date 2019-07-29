@@ -1,0 +1,78 @@
+# {{ ansible_managed }}
+# AWX Virtual Hosts for nginx
+
+upstream uwsgi {
+    server 127.0.0.1:{{ awx_debian_django_port }};
+}
+
+upstream daphne {
+    server 127.0.0.1:{{ awx_debian_daphne_port }};
+}
+
+error_page 502 @update;
+proxy_next_upstream error timeout http_502;
+
+{% if awx_debian_nginx_ssl %}
+server {
+    listen       80;
+    server_name  {{ awx_debian_fqdn }} {{  ansible_hostname }} {{ inventory_hostname }} _;
+    return 301 https://$server_name$request_uri;
+}
+{% endif %}
+
+server {
+    {% if awx_debian_nginx_ssl %}
+    listen 443 ssl;
+    server_name  {{ awx_debian_fqdn }} {{  ansible_hostname }};
+    {% else %}
+    listen 80;
+    server_name  {{ awx_debian_fqdn }} {{  ansible_hostname }} {{ inventory_hostname }} _;
+    {% endif %}
+    keepalive_timeout  90;
+    root  {{ awx_debian_home }};
+
+    access_log  /var/log/tower/nginx-access.log;
+    error_log  /var/log/tower/nginx-error.log warn;
+
+
+    {% if awx_debian_nginx_ssl %}
+    ssl_session_cache  builtin:1000  shared:SSL:10m;
+    ssl_session_timeout 10m;
+    ssl_protocols       TLSv1 TLSv1.1 TLSv1.2;
+    ssl_ciphers HIGH:!aNULL:!eNULL:!EXPORT:!CAMELLIA:!DES:!MD5:!PSK:!RC4;
+
+    ssl_certificate     /etc/nginx/ssl/awx-debian.pem;
+    ssl_certificate_key /etc/nginx/ssl/awx-key.pem;
+    {% endif %}
+    location /static/ {
+        alias {{ awx_debian_home }}/public/static/;
+    }
+
+    location /favicon.ico {
+        alias {{ awx_debian_home }}/public/static/assets/favicon.ico;
+    }
+
+    location /websocket {
+        proxy_pass http://daphne;
+        proxy_http_version 1.1;
+        proxy_buffering off;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $http_host;
+        proxy_redirect off;
+        proxy_set_header Connection "upgrade";
+    }
+
+    location / {
+        uwsgi_read_timeout 120s;
+        uwsgi_pass uwsgi;
+        include /etc/nginx/uwsgi_params;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-Port 443;
+    }
+
+    location @update {
+        default_type text/html;
+        return 200 '<html><center><p>AWX is Down!</br></p></center></html>';
+    }
+}

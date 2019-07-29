@@ -1,0 +1,81 @@
+# {{ ansible_managed }}
+# AWX Settings
+
+import os
+
+ADMINS = ()
+
+TIME_ZONE = 'US/Pacific'
+
+STATIC_ROOT = '{{ awx_debian_home }}/public/static'
+
+PROJECTS_ROOT = '{{ awx_debian_home }}/projects'
+
+JOBOUTPUT_ROOT = '{{ awx_debian_home }}/job_status'
+
+SECRET_KEY = 'SuperSecretKey'
+
+ALLOWED_HOSTS = ['*']
+
+INTERNAL_API_URL = '{% if awx_debian_nginx_ssl %}https://{% else %}http://{% endif %}{{ awx_debian_fqdn }}'
+
+USE_X_FORWARDED_PORT = True
+
+AWX_TASK_ENV['HOME'] = '{{ awx_debian_home }}'
+
+CLUSTER_HOST_ID = '{{ ansible_hostname }}'
+SYSTEM_UUID = '10000000-0000-0000-0000-000000000001'
+
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False
+
+DATABASES = {
+    'default': {
+        'ATOMIC_REQUESTS': True,
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': '{{ awx_debian_db }}',
+        'USER': '{{ awx_debian_db_user }}',
+        'PASSWORD': '{{ awx_debian_db_pw }}',
+        'HOST': '127.0.0.1',
+        'PORT': '5432',
+    }
+}
+
+BROKER_URL = 'amqp://{}:{}@{}:{}/{}'.format(
+    '{{ awx_debian_rmq_user }}',
+    '{{ awx_debian_rmq_pw }}',
+    '127.0.0.1',
+    '5672',
+    '{{ awx_debian_rmq_vhost }}')
+
+CHANNEL_LAYERS = {
+    'default': {'BACKEND': 'asgi_amqp.AMQPChannelLayer',
+                'ROUTING': 'awx.main.routing.channel_routing',
+                'CONFIG': {'url': BROKER_URL}}
+}
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+        'LOCATION': '{}:{}'.format(
+            '127.0.0.1',
+            '11211')
+    },
+    'ephemeral': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    },
+}
+
+###############################################################################
+# EMAIL SETTINGS
+###############################################################################
+
+SERVER_EMAIL = '{{ awx_debian_user }}@{{ ansible_hostname }}'
+DEFAULT_FROM_EMAIL = '{{ awx_debian_user }}@{{ ansible_hostname }}'
+EMAIL_SUBJECT_PREFIX = '[DebIan-AWX]'
+
+EMAIL_HOST = 'mail'
+EMAIL_PORT = 25
+EMAIL_HOST_USER = ''
+EMAIL_HOST_PASSWORD = ''
+EMAIL_USE_TLS = True

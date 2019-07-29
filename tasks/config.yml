@@ -1,0 +1,33 @@
+---
+
+- name: Perform Django Database Migrations
+  shell: "{{ awx_debian_home }}/venv/awx/bin/awx-manage migrate --no-input"
+  become: yes
+  become_user: "{{ awx_debian_user }}"
+
+- name: Collect Static Content
+  shell: "{{ awx_debian_home }}/venv/awx/bin/awx-manage collectstatic --no-input"
+  become: yes
+  become_user: "{{ awx_debian_user }}"
+
+- name: Create AWX Administrator if Refreshing or Rebuilding
+  command: "{{ awx_debian_home }}/venv/awx/bin/awx-manage shell -c \"from django.contrib.auth.models import User; User.objects.create_superuser('{{ awx_debian_admin }}', '{{ awx_debian_user }}@{{ ansible_hostname }}', '{{ awx_debian_pw }}')\""
+  become: yes
+  become_user: "{{ awx_debian_user }}"
+  when: awx_debian_refresh or
+        awx_debian_build
+
+- name: Update {{ awx_debian_admin }} Password if not Refreshing or Rebuilding
+  command: "{{ awx_debian_home }}/venv/awx/bin/awx-manage shell -c \"from django.contrib.auth.models import User; u = User.objects.get(username='{{ awx_debian_admin }}'); u.set_password('{{ awx_debian_pw }}'); u.save();\""
+  when: not awx_debian_refresh or
+        not awx_debian_build
+
+- name: Provision instance
+  shell: "{{ awx_debian_home }}/venv/awx/bin/awx-manage provision_instance --hostname {{ ansible_hostname }}"
+  become: yes
+  become_user: "{{ awx_debian_user }}"
+
+- name: Register Task Queue
+  shell: "{{ awx_debian_home }}/venv/awx/bin/awx-manage register_queue --queuename=tower --instance_percent=100"
+  become: yes
+  become_user: "{{ awx_debian_user }}"

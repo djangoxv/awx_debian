@@ -1,0 +1,53 @@
+---
+
+# AWX Version to install
+awx_debian_ver: "6.1.0"
+
+# AWX has only been tested on Debian 9 and 10
+awx_debian_os: False
+
+# System user to run AWX processes
+awx_debian_user: "awx"
+
+# AWX Administrator
+awx_debian_admin: "awx-admin"
+awx_debian_pw: "SuperAWX"
+
+# Postgres Database name and administrative credentials
+awx_debian_db: "awx_db"
+awx_debian_db_user: "awx"
+awx_debian_db_pw: "db4AWX"
+
+# Whether to Build AWX
+awx_debian_build: True
+
+# AWX UI Builds Depend on Node.js 10.15
+awx_debian_node_ver: "10.15.2"
+
+# Builds AWX Official Logos
+# See https://github.com/ansible/awx-logos/blob/master/TRADEMARKS.md
+awx_debian_official_logo: False
+
+# Application Home
+awx_debian_home: "/var/lib/awx"
+
+# uWSGI port for the AWX Django Application awx-django.service
+awx_debian_django_port: "8050"
+
+# Django Channels use Daphne for Websockets awx-daphne.service
+awx_debian_daphne_port: "8051"
+
+# RabbitMQ for Task Queue
+awx_debian_rmq_vhost: "awx"
+awx_debian_rmq_user: "awx"
+awx_debian_rmq_pw: "BunnyAWX"
+
+# Nginx Reverse Proxy Port 443 or 80
+awx_debian_nginx_ssl: True
+
+# Nginx Site Default Name and url
+awx_debian_fqdn: "awx-debian.single.ton"
+awx_debian_url: "http://{{ awx_debian_fqdn }}"
+
+# Deletes all Data and Installs a New Instance
+awx_debian_refresh: False

@@ -1,0 +1,68 @@
+---
+
+- name: Install systemd unit files for AWX and dependent services
+  template:
+    src:  "{{ item }}.j2"
+    dest: "/etc/systemd/system/{{ item }}"
+    group: "{{ awx_debian_user }}"
+    mode: 0770
+  with_items:
+    - 'awx-django.service'
+    - 'awx-daphne.service'
+    - 'awx-dispatch.service'
+    - 'awx-callback.service'
+    - 'awx-workers.service'
+
+- name: Start AWX Services
+  systemd:
+    name: "{{ item }}"
+    state: started
+    daemon_reload: yes
+    enabled: yes
+  with_items:
+    - 'awx-django'
+    - 'awx-daphne'
+    - 'awx-dispatch'
+    - 'awx-callback'
+    - 'awx-workers'
+
+- name: Set AWX URL to use https if SSL is Enabled
+  set_fact:
+    awx_debian_url: "https://{{ awx_debian_fqdn }}"
+  when: awx_debian_nginx_ssl
+ 
+- name: Add Hosts Entry {{ ansible_eth0.ipv4.address }} {{ awx_debian_fqdn }}
+  lineinfile:
+    path: /etc/hosts
+    regexp: "^{{ ansible_eth0.ipv4.address }}"
+    line:  "{{ ansible_eth0.ipv4.address }} {{ awx_debian_fqdn }}"
+
+- name: Set AWX Base URL
+  uri:
+    url:      "{{ awx_debian_url }}/api/v2/settings/system/"
+    user:     "{{ awx_debian_admin }}"
+    password: "{{ awx_debian_pw }}"
+    force_basic_auth: yes
+    follow_redirects: all
+    validate_certs: no
+    method: PUT
+    body: '{"ACTIVITY_STREAM_ENABLED":true,
+            "ACTIVITY_STREAM_ENABLED_FOR_INVENTORY_SYNC":false,
+            "ORG_ADMINS_CAN_SEE_ALL_USERS":true,
+            "MANAGE_ORGANIZATION_AUTH":true,
+            "TOWER_ADMIN_ALERTS":true,
+            "TOWER_URL_BASE":"{{ awx_debian_url }}",
+            "REMOTE_HOST_HEADERS":["HTTP_X_FORWARDED_FOR","REMOTE_ADDR","REMOTE_HOST"],
+            "PROXY_IP_WHITELIST":[],
+            "BROKER_DURABILITY":true}'
+    body_format: json
+  ignore_errors: ansible_check_mode
+
+- name: Add Hosts Entry to Login to AWX if no DNS for {{ awx_debian_fqdn }}
+  pause:
+    seconds: 2
+    prompt:
+      "{{ ansible_eth0.ipv4.address }} {{ awx_debian_fqdn }}\n\n
+       URL:      {{ awx_debian_url  }} \n
+       Username: {{ awx_debian_admin }} \n
+       Password: {{ awx_debian_pw }} \n"

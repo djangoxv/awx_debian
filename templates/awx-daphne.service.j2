@@ -1,0 +1,15 @@
+# {{ ansible_managed }}
+
+[Unit]
+Description=AWX Daphne Django Channels Daemon
+Wants=network-online.target
+
+[Service]
+User={{ awx_debian_user }}
+Group={{ awx_debian_user }}
+ExecStart={{ awx_debian_home }}/venv/awx/bin/daphne -b 127.0.0.1 \
+    -p {{ awx_debian_daphne_port }} awx.asgi:channel_layer
+WorkingDirectory={{ awx_debian_home }}
+
+[Install]
+WantedBy=multi-user.target

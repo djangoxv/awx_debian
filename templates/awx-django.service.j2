@@ -1,0 +1,18 @@
+# {{ ansible_managed }}
+[Unit]
+Description=AWX Django uWSGI daemon
+Wants=network-online.target
+[Service]
+LimitNOFILE=32768
+User={{ awx_debian_user }}
+Group={{ awx_debian_user }}
+ExecStart={{ awx_debian_home }}/venv/awx/bin/uwsgi -s 127.0.0.1:{{ awx_debian_django_port }} \
+    --module=awx.wsgi:application --vacuum --processes=5 --harakiri=120 --no-orphans \
+    --master --max-requests=1000 --master-fifo={{ awx_debian_home }}/awxfifo --lazy-apps -b 32768
+KillSignal=SIGQUIT
+Type=notify
+NotifyAccess=all
+WorkingDirectory={{ awx_debian_home }}
+
+[Install]
+WantedBy=multi-user.target

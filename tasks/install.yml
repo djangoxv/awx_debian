@@ -1,0 +1,158 @@
+---
+
+- name: Set AWX Version {{ awx_debian_ver }}
+  template:
+    src:   "tower_version.j2"
+    dest:  "{{ awx_debian_home }}/.tower_version"
+    owner: "{{ awx_debian_user }}"
+    group: "{{ awx_debian_user }}"
+
+- name: Download AWX {{ awx_debian_ver }} 
+  git:
+    repo: "https://github.com/ansible/awx.git"
+    dest: "/home/{{ awx_debian_user }}/awx-{{ awx_debian_ver }}"
+    version: "{{ awx_debian_ver }}"
+    force: yes
+  become: yes
+  become_user: "{{ awx_debian_user }}"
+
+- name: Install Ansible virtualenv
+  make:
+    chdir: "/home/{{ awx_debian_user }}/awx-{{ awx_debian_ver }}"
+    target: "virtualenv_ansible_py3"
+  environment:
+    VENV_BASE: "{{ awx_debian_home }}/venv"
+  become: yes
+  become_user: "{{ awx_debian_user }}"
+
+- name: Collect Requirements for AWX Ansible
+  find:
+    paths: "/home/{{ awx_debian_user }}/awx-{{ awx_debian_ver }}/requirements"
+    patterns: "requirements_ansible*.txt"
+  register: ansible_requirements
+
+- name: Install Ansible Requirements
+  pip:
+    virtualenv: "{{ awx_debian_home }}/venv/ansible"
+    requirements: "{{ item.path }}"
+  with_items: "{{ ansible_requirements.files }}"
+  become: yes
+  become_user: "{{ awx_debian_user }}"
+
+- name: Install AWX virtualenv
+  make:
+    chdir: "/home/{{ awx_debian_user }}/awx-{{ awx_debian_ver }}"
+    target: "virtualenv_awx"
+  environment:
+    VENV_BASE: "{{ awx_debian_home }}/venv"
+  become: yes
+  become_user: "{{ awx_debian_user }}"
+
+- name: Collect Requirements for AWX
+  find:
+    paths: "/home/{{ awx_debian_user }}/awx-{{ awx_debian_ver }}/requirements"
+    patterns: "requirements(?!(_ansible)).*txt$"
+    use_regex: yes
+  register: awx_requirements
+
+- name: Install AWX Requirements
+  pip:
+    virtualenv: "{{ awx_debian_home }}/venv/awx"
+    requirements: "{{ item.path }}"
+  with_items: "{{ awx_requirements.files }}"
+  become: yes
+  become_user: "{{ awx_debian_user }}"
+
+- name: Download Official AWX Logo
+  git:
+    repo: "https://github.com/ansible/awx-logos.git"
+    dest: "/home/{{ awx_debian_user }}/awx-logos"
+    force: yes
+  when: awx_debian_official_logo
+  become: yes
+  become_user: "{{ awx_debian_user }}"
+
+- name: Update Source with Official AWX Logos
+  copy:
+    src:  "/home/{{ awx_debian_user }}/awx-logos/awx/ui/client/assets/{{ item }}"
+    dest: "/home/{{ awx_debian_user }}/awx-{{ awx_debian_ver }}/awx/ui/client/assets/{{ item }}"
+    remote_src: yes
+  when: awx_debian_official_logo
+  with_items:
+    - 'favicon.ico'
+    - 'logo-header.svg'
+    - 'logo-login.svg'
+  become: yes
+  become_user: "{{ awx_debian_user }}"
+
+- name: Create Node Version Manager Path
+  file:
+    path: "/home/{{ awx_debian_user }}/.nvm"
+    state: directory
+    owner: "{{ awx_debian_user }}"
+    group: "{{ awx_debian_user }}"
+
+- name: Download 0.34.0 node version manager Installer
+  get_url:
+    url:  "https://raw.githubusercontent.com/creationix/nvm/v0.34.0/install.sh"
+    dest:     "/home/{{ awx_debian_user }}/.nvm/install_nvm.sh"
+    checksum: "md5:c3552e50e9b69b7bd128e8a9dc18832c"
+    mode: "0755"
+  become: yes
+  become_user: "{{ awx_debian_user }}"
+    
+- name: Install node version manager 0.34.0
+  shell: "/home/{{ awx_debian_user }}/.nvm/install_nvm.sh"
+  args:
+    chdir: "/home/{{ awx_debian_user }}/.nvm"
+    creates: "/home/{{ awx_debian_user  }}/.nvm/nvm.sh"
+  environment:
+    NVM_DIR: "/home/{{ awx_debian_user }}/.nvm"
+  become: yes
+  become_user: "{{ awx_debian_user }}"
+
+- name: Install nodejs {{ awx_debian_node_ver }} needed to build AWX UI
+  shell: >
+    . /home/{{ awx_debian_user }}/.nvm/nvm.sh && nvm install {{ awx_debian_node_ver }}
+  args:
+    chdir: "{{ awx_debian_home }}"
+    creates: "{{ awx_debian_home }}/.nvm/versions/node/v{{ awx_debian_node_ver }}"
+  environment:
+    NVM_DIR: "/home/{{ awx_debian_user }}/.nvm"
+  become: yes
+  become_user: "{{ awx_debian_user }}"
+
+- name: Build AWX UI
+  make:
+    chdir: "/home/{{ awx_debian_user }}/awx-{{ awx_debian_ver }}"
+    target: "ui-release"
+  environment:
+    VENV_BASE: "{{ awx_debian_home }}/venv"
+    NPM_BIN: "/home/{{ awx_debian_user }}/.nvm/versions/node/v{{ awx_debian_node_ver }}/bin/npm"
+    NODE: "/home/{{ awx_debian_user }}/.nvm/versions/node/v{{ awx_debian_node_ver }}/bin/node"
+    PATH: "/home/{{ awx_debian_user }}/.nvm/versions/node/v{{ awx_debian_node_ver }}/bin:{{ ansible_env.PATH }}"
+  become: yes
+  become_user: "{{ awx_debian_user }}"
+
+- name: Wrap the AWX Release Package in source distribution
+  make:
+    chdir: "/home/{{ awx_debian_user }}/awx-{{ awx_debian_ver }}"
+    target: "sdist"
+  environment:
+    PYTHON: "{{ awx_debian_home }}/venv/awx/bin/python"
+    VENV_BASE: "{{ awx_debian_home }}/venv"
+  become: yes
+  become_user: "{{ awx_debian_user }}"
+
+- name: Install AWX {{ awx_debian_ver }}
+  pip:
+    name: "file:///home/{{ awx_debian_user }}/awx-{{ awx_debian_ver }}/dist/awx-{{ awx_debian_ver }}.tar.gz"
+    virtualenv: "{{ awx_debian_home }}/venv/awx"
+
+- name: Delete AWX Source
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - '/home/{{ awx_debian_user }}/awx-{{ awx_debian_ver }}'
+    - '/home/{{ awx_debian_user }}/awx-logos'

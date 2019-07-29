@@ -1,0 +1,115 @@
+---
+
+- name: Create the {{ awx_debian_user }} User
+  user:
+    name:  "{{ awx_debian_user }}"
+    shell: /bin/bash
+
+- name: Delete AWX Installed Collateral when Refreshing or Building
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - "{{ awx_debian_home }}"
+    - "/etc/tower"
+    - "/var/log/tower"
+    - "/usr/share/awx"
+    - "/usr/share/doc/awx"
+    - "/usr/share/sosreport/sos/plugins/tower.py"
+    - "/usr/bin/ansible-tower-service"
+    - "/usr/bin/ansible-tower-setup"
+    - "/usr/bin/failure-event-handler"
+    - "/usr/bin/awx-python"
+  when: awx_debian_refresh or
+        awx_debian_build
+
+- name: Provision AWX Path Dependencies
+  file:
+    path:  "{{ item }}"
+    owner: "{{ awx_debian_user }}"
+    group: "{{ awx_debian_user }}"
+    state: directory
+  with_items:
+    - "{{ awx_debian_home }}/venv"
+    - "{{ awx_debian_home }}/projects"
+    - "{{ awx_debian_home }}/job_status"
+    - "/etc/tower/conf.d"
+    - "/var/log/tower"
+    - "/usr/share/awx"
+    - "/usr/share/doc/awx"
+
+- name: Install AWX Settings
+  template:
+    src:   "settings.py.j2"
+    dest:  "/etc/tower/settings.py"
+    owner: "{{ awx_debian_user }}"
+    group: "{{ awx_debian_user }}"
+    mode: 0640
+
+- name: Install AWX Build Dependencies
+  apt:
+    name:
+      - 'gcc'
+      - 'git'
+      - 'gettext'
+      - 'krb5-config'
+      - 'libkrb5-dev'
+      - 'libldap2-dev'
+      - 'libsasl2-dev'
+      - 'libssl-dev'
+      - 'libcurl4-openssl-dev'
+      - 'libxmlsec1-dev'
+      - 'libxml2-dev'
+      - 'make'
+      - 'pkg-config'
+      - 'python-dev'
+      - 'python3-dev'
+      - 'python3-venv'
+      - 'virtualenv'
+  when: awx_debian_build or
+        awx_debian_refresh
+
+- name: Install AWX System Service Dependencies
+  apt:
+    name:
+      - 'memcached'
+      - 'nginx-full'
+      - 'postgresql-all'
+      - 'python'
+      - 'python-psycopg2'
+      - 'python3'
+      - 'rabbitmq-server'
+      - 'sosreport'
+
+- name: Verify Dependent Services are Started
+  systemd:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  with_items:
+    - 'memcached'
+    - 'nginx'
+    - 'postgresql'
+    - 'rabbitmq-server'
+
+- name: Disable Default RabbitMQ vhost
+  rabbitmq_vhost:
+    name: "/"
+    state: absent
+  ignore_errors: ansible_check_mode
+
+- name: Create AWX RabbitMQ vhost
+  rabbitmq_vhost:
+    name: "{{ awx_debian_rmq_vhost }}"
+  ignore_errors: ansible_check_mode
+
+- name: Configure AWX RabbitMQ permissions
+  rabbitmq_user:
+    user:     "{{ awx_debian_rmq_user }}"
+    password: "{{ awx_debian_rmq_pw }}"
+    permissions:
+      - vhost: "{{ awx_debian_rmq_vhost  }}"
+        configure_priv: .*
+        read_priv: .*
+        write_priv: .*
+  ignore_errors: ansible_check_mode
