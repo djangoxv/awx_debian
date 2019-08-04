@@ -10,6 +10,9 @@ awx_debian_user: "awx"
 awx_debian_admin: "awx-admin"
 awx_debian_pw: "SuperAWX"
 
+# Installation Secret Key used for seeding signatures
+awx_debian_secret_key: "SuperSecretKey"
+
 # Postgres Database name and administrative credentials
 awx_debian_db: "awx_db"
 awx_debian_db_user: "awx"

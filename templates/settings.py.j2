@@ -13,7 +13,7 @@ PROJECTS_ROOT = '{{ awx_debian_home }}/projects'
 
 JOBOUTPUT_ROOT = '{{ awx_debian_home }}/job_status'
 
-SECRET_KEY = 'SuperSecretKey'
+SECRET_KEY = '{{ awx_debian_secret_key }}'
 
 ALLOWED_HOSTS = ['*']
 

@@ -30,7 +30,7 @@
   set_fact:
     awx_debian_url: "https://{{ awx_debian_fqdn }}"
   when: awx_debian_nginx_ssl
- 
+
 - name: Add Hosts Entry {{ ansible_eth0.ipv4.address }} {{ awx_debian_fqdn }}
   lineinfile:
     path: /etc/hosts
