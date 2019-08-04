@@ -1,0 +1,12 @@
+galaxy_info:
+  role_name: awx_debian
+  author: Jeremy Capps Hermes
+  description: Bypass docker to install AWX on Debian hosts
+  license: GPLv3
+  min_ansible_version: 2.5
+  platforms:
+    - name: Debian
+      versions:
+        - 9
+        - 10
+  galaxy_tags: ['automation','awx','debian','system','tower']
