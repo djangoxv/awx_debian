@@ -36,7 +36,7 @@ DATABASES = {
         'NAME': '{{ awx_debian_db }}',
         'USER': '{{ awx_debian_db_user }}',
         'PASSWORD': '{{ awx_debian_db_pw }}',
-        'HOST': '127.0.0.1',
+        'HOST': '{{ awx_debian_db_host }}',
         'PORT': '5432',
     }
 }
@@ -44,7 +44,7 @@ DATABASES = {
 BROKER_URL = 'amqp://{}:{}@{}:{}/{}'.format(
     '{{ awx_debian_rmq_user }}',
     '{{ awx_debian_rmq_pw }}',
-    '127.0.0.1',
+    '{{ awx_debian_rmq_host }}',
     '5672',
     '{{ awx_debian_rmq_vhost }}')
 

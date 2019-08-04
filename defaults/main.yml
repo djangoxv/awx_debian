@@ -3,9 +3,6 @@
 # AWX Version to install
 awx_debian_ver: "6.1.0"
 
-# AWX has only been tested on Debian 9 and 10
-awx_debian_os: False
-
 # System user to run AWX processes
 awx_debian_user: "awx"
 
@@ -17,8 +14,9 @@ awx_debian_pw: "SuperAWX"
 awx_debian_db: "awx_db"
 awx_debian_db_user: "awx"
 awx_debian_db_pw: "db4AWX"
+awx_debian_db_host: "127.0.0.1"
 
-# Whether to Build AWX
+# Whether to Build AWX - this is skipped if version is already installed
 awx_debian_build: True
 
 # AWX UI Builds Depend on Node.js 10.15
@@ -38,6 +36,7 @@ awx_debian_django_port: "8050"
 awx_debian_daphne_port: "8051"
 
 # RabbitMQ for Task Queue
+awx_debian_rmq_host: "127.0.0.1"
 awx_debian_rmq_vhost: "awx"
 awx_debian_rmq_user: "awx"
 awx_debian_rmq_pw: "BunnyAWX"

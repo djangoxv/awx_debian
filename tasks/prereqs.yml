@@ -1,0 +1,16 @@
+---
+
+- name: Verify OS is Debian 9 or 10
+  assert:
+    that:
+      - ansible_distribution == 'Debian'
+      - ansible_distribution_version is version_compare('9', '>=')
+      - ansible_distribution_version is version_compare('11', '<')
+    fail_msg: "The awx_debian role is not tested for {{ ansible_distribution }} {{ ansible_distribution_version }}"
+    success_msg: "{{ ansible_host }} is running {{ ansible_distribution }} {{ ansible_distribution_version }}"
+
+- name: Verify Ansible is greater than 2.5
+  assert:
+    that: ansible_version.full is version_compare('2.5.0', '>=')
+    fail_msg: "If you have python3 check out  https://github.com/djangoxv/install_awx_debian.git"
+    success_msg: "Ansible version is {{ ansible_version.full }}"

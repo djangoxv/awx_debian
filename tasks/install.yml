@@ -1,5 +1,18 @@
 ---
 
+- name: Stop AWX Services if Refreshing or Building
+  systemd:
+    state: stopped
+    name: "{{ item }}"
+    daemon_reload: yes
+  failed_when: False
+  with_items:
+    - 'awx-django'
+    - 'awx-daphne'
+    - 'awx-dispatch'
+    - 'awx-callback'
+    - 'awx-workers'
+
 - name: Set AWX Version {{ awx_debian_ver }}
   template:
     src:   "tower_version.j2"
@@ -7,7 +20,7 @@
     owner: "{{ awx_debian_user }}"
     group: "{{ awx_debian_user }}"
 
-- name: Download AWX {{ awx_debian_ver }} 
+- name: Download AWX {{ awx_debian_ver }}
   git:
     repo: "https://github.com/ansible/awx.git"
     dest: "/home/{{ awx_debian_user }}/awx-{{ awx_debian_ver }}"
@@ -100,7 +113,7 @@
     mode: "0755"
   become: yes
   become_user: "{{ awx_debian_user }}"
-    
+
 - name: Install node version manager 0.34.0
   shell: "/home/{{ awx_debian_user }}/.nvm/install_nvm.sh"
   args:

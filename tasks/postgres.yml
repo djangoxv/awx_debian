@@ -6,6 +6,7 @@
     password: "{{ awx_debian_db_pw }}"
     role_attr_flags: LOGIN
     login_user: postgres
+  become: yes
   become_user: postgres
   ignore_errors: ansible_check_mode
 
@@ -14,14 +15,16 @@
     name: "{{ awx_debian_db }}"
     state: absent
     login_user: postgres
-  become_user: postgres
   when: awx_debian_refresh
+  become: yes
+  become_user: postgres
 
 - name: Verify the {{ awx_debian_db }} Database
   postgresql_db:
     name: "{{ awx_debian_db }}"
     owner: "{{ awx_debian_db_user }}"
     login_user: postgres
+  become: yes
   become_user: postgres
 
 - name:  Grant ALL Privileges to {{ awx_debian_db_user }} for {{ awx_debian_db }}
@@ -31,5 +34,6 @@
     role: "{{ awx_debian_db_user }}"
     type: database
     login_user: postgres
-  become_user: postgres
   ignore_errors: ansible_check_mode
+  become: yes
+  become_user: postgres

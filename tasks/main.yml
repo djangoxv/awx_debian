@@ -1,17 +1,11 @@
 ---
 
-- name: Verify OS is Valid for awx_debian roles
-  set_fact:
-    awx_debian_os: True
-  when:
-    - ansible_distribution == 'Debian'
-    - ansible_distribution_version == '9' or 
-      ansible_distribution_version == '10'
+- name: Check OS and Ansible Versions are Valid
+  include_tasks: prereqs.yml
 
 - name: Check for AWX Installation
   stat:
     path: "{{ awx_debian_home }}/venv/awx/bin/awx-manage"
-  failed_when: not awx_debian_os
   register: awx_installed
   check_mode: no
 
@@ -22,7 +16,7 @@
   failed_when: False
   check_mode: no
 
-- name: Disable Build if AWX {{ awx_debian_ver }} is Installed 
+- name: Skip Install if AWX {{ awx_debian_ver }} is Installed
   set_fact:
     awx_debian_build: False
   when:
@@ -30,21 +24,6 @@
     - awx_version.stdout is defined
     - awx_version.stdout == awx_debian_ver
   check_mode: no
-
-- name: Stop AWX Services if Refreshing or Building
-  systemd:
-    state: stopped
-    name: "{{ item }}"
-    daemon_reload: yes
-  failed_when: False
-  with_items:
-    - 'awx-django'
-    - 'awx-daphne'
-    - 'awx-dispatch'
-    - 'awx-callback'
-    - 'awx-workers'
-  when: awx_debian_refresh or
-        awx_debian_build
 
 - name: Provision Dependent Services and Install Build Dependencies
   include_tasks: deps.yml
@@ -60,7 +39,7 @@
   when: awx_debian_refresh or
         awx_debian_build
 
-- name: Configure Standalone AWX 
+- name: Configure Standalone AWX
   include_tasks: config.yml
 
 - name: Start AWX Services
