@@ -7,6 +7,6 @@ galaxy_info:
   platforms:
     - name: Debian
       versions:
-        - 9
-        - 10
-  galaxy_tags: ['automation','awx','debian','system','tower']
+        - 'stretch'
+        - 'buster'
+  galaxy_tags: ['automation', 'awx', 'debian', 'system', 'tower']
