@@ -42,11 +42,11 @@ for Postgres, Memcached, and RabbitMQ
 - awx-workers    Task channel workers
 
 #### Extra Variables
-          Name            |    Options      |  Default  |         Purpose                  
-------------------------- | --------------- | --------- | ----------------------------------
- awx_debian_refresh       |   True/False    |   False   | Remove AWX and start again        
- awx_debian_nginx_ssl     |   True/False    |   True    | Creates a Self-Signed Certificate 
- awx_debian_official_logo |   True/False    |   False   | Builds UI with Official awx-logos 
+|          Name            |    Options      |  Default  |         Purpose                   |
+|------------------------- | --------------- | --------- | ----------------------------------|
+| awx_debian_refresh       |   True/False    |   False   | Remove AWX and start again        |
+| awx_debian_nginx_ssl     |   True/False    |   True    | Creates a Self-Signed Certificate |
+| awx_debian_official_logo |   True/False    |   False   | Builds UI with Official awx-logos |
 
 #### TO DO
 * Not so Alone: Add External Database / RabbitMQ Support
