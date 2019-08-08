@@ -31,11 +31,11 @@
     awx_debian_url: "https://{{ awx_debian_fqdn }}"
   when: awx_debian_nginx_ssl
 
-- name: Add Hosts Entry {{ ansible_eth0.ipv4.address }} {{ awx_debian_fqdn }}
+- name: Add Hosts Entry {{ ansible_default_ipv4.address }} {{ awx_debian_fqdn }}
   lineinfile:
     path: /etc/hosts
-    regexp: "^{{ ansible_eth0.ipv4.address }}"
-    line:  "{{ ansible_eth0.ipv4.address }} {{ awx_debian_fqdn }}"
+    regexp: "^{{ ansible_default_ipv4.address }}"
+    line:  "{{ ansible_default_ipv4.address }} {{ awx_debian_fqdn }}"
 
 - name: Set AWX Base URL
   uri:
@@ -62,7 +62,7 @@
   pause:
     seconds: 2
     prompt:
-      "{{ ansible_eth0.ipv4.address }} {{ awx_debian_fqdn }}\n\n
+      "{{ ansible_default_ipv4.address }} {{ awx_debian_fqdn }}\n\n
        URL:      {{ awx_debian_url  }} \n
        Username: {{ awx_debian_admin }} \n
        Password: {{ awx_debian_pw }} \n"
