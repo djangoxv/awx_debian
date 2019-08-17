@@ -14,3 +14,40 @@
     that: ansible_version.full is version_compare('2.5.0', '>=')
     fail_msg: "If you have python3 check out  https://github.com/djangoxv/install_awx_debian.git"
     success_msg: "Ansible version is {{ ansible_version.full }}"
+
+- name: Check for AWX Installation
+  stat:
+    path: "{{ awx_debian_home }}/venv/awx/bin/awx-manage"
+  register: awx_installed
+  check_mode: no
+
+- name: Check AWX Version if Installed
+  command: "{{ awx_debian_home }}/venv/awx/bin/awx-manage --version"
+  register: awx_version
+  when: awx_installed.stat.exists
+  failed_when: False
+  check_mode: no
+
+- name: Skip Install if AWX {{ awx_debian_ver }} is Installed
+  set_fact:
+    awx_debian_build: False
+  when:
+    - awx_installed.stat.exists
+    - awx_version.stdout is defined
+    - awx_version.stdout == awx_debian_ver
+  check_mode: no
+
+- name: Stop AWX Services if Refreshing or Building
+  systemd:
+    state: stopped
+    name: "{{ item }}"
+    daemon_reload: yes
+  failed_when: False
+  with_items:
+    - 'awx-django'
+    - 'awx-daphne'
+    - 'awx-dispatch'
+    - 'awx-callback'
+    - 'awx-workers'
+  when: awx_debian_refresh or
+        awx_debian_build

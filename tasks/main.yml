@@ -1,29 +1,7 @@
 ---
 
-- name: Check OS and Ansible Versions are Valid
+- name: Check for Compatible OS, Ansible Version, and Previous AWX Install
   include_tasks: prereqs.yml
-
-- name: Check for AWX Installation
-  stat:
-    path: "{{ awx_debian_home }}/venv/awx/bin/awx-manage"
-  register: awx_installed
-  check_mode: no
-
-- name: Check AWX Version if Installed
-  command: "{{ awx_debian_home }}/venv/awx/bin/awx-manage --version"
-  register: awx_version
-  when: awx_installed.stat.exists
-  failed_when: False
-  check_mode: no
-
-- name: Skip Install if AWX {{ awx_debian_ver }} is Installed
-  set_fact:
-    awx_debian_build: False
-  when:
-    - awx_installed.stat.exists
-    - awx_version.stdout is defined
-    - awx_version.stdout == awx_debian_ver
-  check_mode: no
 
 - name: Provision Dependent Services and Install Build Dependencies
   include_tasks: deps.yml
