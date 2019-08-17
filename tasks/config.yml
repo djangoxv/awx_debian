@@ -1,33 +1,45 @@
 ---
 
 - name: Perform Django Database Migrations
-  shell: "{{ awx_debian_home }}/venv/awx/bin/awx-manage migrate --no-input"
+  command: "awx-manage migrate --no-input"
+  environment:
+    PATH: "{{ awx_debian_home }}/venv/awx/bin/:{{ ansible_env.PATH }}"
   become: yes
   become_user: "{{ awx_debian_user }}"
 
 - name: Collect Static Content
-  shell: "{{ awx_debian_home }}/venv/awx/bin/awx-manage collectstatic --no-input"
+  command: "awx-manage collectstatic --no-input"
+  environment:
+    PATH: "{{ awx_debian_home }}/venv/awx/bin/:{{ ansible_env.PATH }}"
   become: yes
   become_user: "{{ awx_debian_user }}"
 
 - name: Create AWX Administrator if Refreshing or Rebuilding
-  command: "{{ awx_debian_home }}/venv/awx/bin/awx-manage shell -c \"from django.contrib.auth.models import User; User.objects.create_superuser('{{ awx_debian_admin }}', '{{ awx_debian_user }}@{{ ansible_hostname }}', '{{ awx_debian_pw }}')\""
+  command: "awx-manage createsuperuser --username {{ awx_debian_admin }} --email {{ awx_debian_user }}@{{ awx_debian_fqdn }} --no-input"
+  environment:
+    PATH: "{{ awx_debian_home }}/venv/awx/bin/:{{ ansible_env.PATH }}"
   become: yes
   become_user: "{{ awx_debian_user }}"
   when: awx_debian_refresh or
         awx_debian_build
 
-- name: Update {{ awx_debian_admin }} Password if not Refreshing or Rebuilding
-  command: "{{ awx_debian_home }}/venv/awx/bin/awx-manage shell -c \"from django.contrib.auth.models import User; u = User.objects.get(username='{{ awx_debian_admin }}'); u.set_password('{{ awx_debian_pw }}'); u.save();\""
-  when: not awx_debian_refresh or
-        not awx_debian_build
-
-- name: Provision instance
-  shell: "{{ awx_debian_home }}/venv/awx/bin/awx-manage provision_instance --hostname {{ ansible_hostname }}"
+- name: Update {{ awx_debian_admin }} Password
+  command: "awx-manage update_password --username {{ awx_debian_admin }} --password {{ awx_debian_pw }}"
+  environment:
+    PATH: "{{ awx_debian_home }}/venv/awx/bin/:{{ ansible_env.PATH }}"
   become: yes
   become_user: "{{ awx_debian_user }}"
 
-- name: Register Task Queue
-  shell: "{{ awx_debian_home }}/venv/awx/bin/awx-manage register_queue --queuename=tower --instance_percent=100"
+- name: Provision {{ ansible_hostname }} AWX Instance
+  command: "awx-manage provision_instance --hostname {{ ansible_hostname }}"
+  environment:
+    PATH: "{{ awx_debian_home }}/venv/awx/bin/:{{ ansible_env.PATH }}"
+  become: yes
+  become_user: "{{ awx_debian_user }}"
+
+- name: Register tower Task Queue for AWX Instance
+  command: "awx-manage register_queue --queuename=tower --instance_percent=100"
+  environment:
+    PATH: "{{ awx_debian_home }}/venv/awx/bin/:{{ ansible_env.PATH }}"
   become: yes
   become_user: "{{ awx_debian_user }}"

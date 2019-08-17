@@ -1,18 +1,5 @@
 ---
 
-- name: Stop AWX Services if Refreshing or Building
-  systemd:
-    state: stopped
-    name: "{{ item }}"
-    daemon_reload: yes
-  failed_when: False
-  with_items:
-    - 'awx-django'
-    - 'awx-daphne'
-    - 'awx-dispatch'
-    - 'awx-callback'
-    - 'awx-workers'
-
 - name: Set AWX Version {{ awx_debian_ver }}
   template:
     src:   "tower_version.j2"
@@ -115,7 +102,7 @@
   become_user: "{{ awx_debian_user }}"
 
 - name: Install node version manager 0.34.0
-  shell: "/home/{{ awx_debian_user }}/.nvm/install_nvm.sh"
+  command: "/home/{{ awx_debian_user }}/.nvm/install_nvm.sh"
   args:
     chdir: "/home/{{ awx_debian_user }}/.nvm"
     creates: "/home/{{ awx_debian_user  }}/.nvm/nvm.sh"
@@ -125,8 +112,7 @@
   become_user: "{{ awx_debian_user }}"
 
 - name: Install nodejs {{ awx_debian_node_ver }} needed to build AWX UI
-  shell: >
-    . /home/{{ awx_debian_user }}/.nvm/nvm.sh && nvm install {{ awx_debian_node_ver }}
+  command: "bash -c '. /home/{{ awx_debian_user }}/.nvm/nvm.sh; nvm install {{ awx_debian_node_ver }}'"
   args:
     chdir: "{{ awx_debian_home }}"
     creates: "{{ awx_debian_home }}/.nvm/versions/node/v{{ awx_debian_node_ver }}"
