@@ -67,6 +67,7 @@
   git:
     repo: "https://github.com/ansible/awx-logos.git"
     dest: "/home/{{ awx_debian_user }}/awx-logos"
+    version: "master"
     force: yes
   when: awx_debian_official_logo
   become: yes

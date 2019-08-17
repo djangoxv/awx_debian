@@ -6,6 +6,8 @@
     PATH: "{{ awx_debian_home }}/venv/awx/bin/:{{ ansible_env.PATH }}"
   become: yes
   become_user: "{{ awx_debian_user }}"
+  when: awx_debian_refresh or
+        awx_debian_build
 
 - name: Collect Static Content
   command: "awx-manage collectstatic --no-input"
@@ -13,6 +15,8 @@
     PATH: "{{ awx_debian_home }}/venv/awx/bin/:{{ ansible_env.PATH }}"
   become: yes
   become_user: "{{ awx_debian_user }}"
+  when: awx_debian_refresh or
+        awx_debian_build
 
 - name: Create AWX Administrator if Refreshing or Rebuilding
   command: "awx-manage createsuperuser --username {{ awx_debian_admin }} --email {{ awx_debian_user }}@{{ awx_debian_fqdn }} --no-input"
@@ -25,21 +29,27 @@
 
 - name: Update {{ awx_debian_admin }} Password
   command: "awx-manage update_password --username {{ awx_debian_admin }} --password {{ awx_debian_pw }}"
+  register: update_pw
   environment:
     PATH: "{{ awx_debian_home }}/venv/awx/bin/:{{ ansible_env.PATH }}"
+  changed_when: update_pw.stdout.find('Password updated')
   become: yes
   become_user: "{{ awx_debian_user }}"
 
 - name: Provision {{ ansible_hostname }} AWX Instance
   command: "awx-manage provision_instance --hostname {{ ansible_hostname }}"
+  register: instance_up
   environment:
     PATH: "{{ awx_debian_home }}/venv/awx/bin/:{{ ansible_env.PATH }}"
+  changed_when: not (instance_up.stdout.find('Instance already registered') != -1)
   become: yes
   become_user: "{{ awx_debian_user }}"
 
 - name: Register tower Task Queue for AWX Instance
   command: "awx-manage register_queue --queuename=tower --instance_percent=100"
+  register: queue_registered
   environment:
     PATH: "{{ awx_debian_home }}/venv/awx/bin/:{{ ansible_env.PATH }}"
+  changed_when: not (queue_registered.stdout.find('Instance Group already registered') != -1)
   become: yes
   become_user: "{{ awx_debian_user }}"
